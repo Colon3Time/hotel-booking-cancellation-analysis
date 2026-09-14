@@ -1,25 +1,30 @@
 import pandas as pd
+from pandas._config.config import is_callable
 
 df = pd.read_csv("/home/amorntep/hotel-booking-cancellation-analysis/data/hotels.csv")
-df.info()
+df["hotel"].unique()
 pd.set_option("display.max_columns", None)
 df.sample(20)
 df.describe()
-# ===== ขั้น 0: Base Cleaning (ทำครั้งเดียว มีผลกับทุกคำถาม -> แก้ df หลักได้) =====
-# NOTE: 1) จัดการค่าว่าง  2) ตัดสินใจเรื่องแถวซ้ำ 31,994 แถว (ยังไม่ตัดสินใจ)
-
-# ===== Loop 1: โจทย์ข้อ 1 =====
-# NOTE: อัตรายกเลิกของแต่ละโรงแรม / distribution_channel / market_segment เป็นเท่าไหร่
-#       ผลลัพธ์ต้องมี "จำนวนการจอง" คู่กับ "อัตรายกเลิก" เสมอ ไม่งั้นตัดสินใจไม่ได้
-#
-# A (ใช้คำนวณคำตอบข้อนี้):
-#     'hotel', 'is_canceled', 'distribution_channel', 'market_segment'
-# B (ใช้ตรวจว่าคำตอบเชื่อได้):
-#     'reservation_status'                        -> is_canceled ตรงกับสถานะจริงไหม (No-Show นับยังไง)
-#     'arrival_date_year', 'arrival_date_month'   -> ข้อมูลมีแค่ ก.ค.2015-ส.ค.2017 ปีไม่ครบ สัดส่วนอาจเอียง
-#     'agent', 'company'                          -> สอดคล้องกับ distribution_channel ไหม
-# C (ยังไม่ใช้ใน loop นี้):
-#     ที่เหลือทั้งหมด -- 'adults', 'meal', 'previous_cancellations', 'booking_changes'
-#     จะย้ายขึ้น A ตอน loop ข้อ 7 (ทำไมถึงยกเลิก)
-#
-# NOTE: การกรองเฉพาะข้อนี้ให้เก็บในตัวแปรใหม่ ห้ามแก้ df หลัก
+print(df["hotel"].unique())
+# 1. อัตรายกเลิกของแต่ละโรงแรม ช่องทางจอง (`distribution_channel`) และกลุ่มลูกค้า (`market_segment`) เป็นเท่าไหร่ — ต้องรายงาน **จำนวนการจองของแต่ละกลุ่มคู่กับอัตราเสมอ** เพราะกลุ่มที่อัตราสูงแต่มีการจองไม่กี่ร้อยรายการไม่คุ้มที่จะลงมือแก้
+# หรือก็คือเอาการจองมา-ลูกค้าที่ยกเลิก
+result = df.groupby("hotel").agg(
+    booking=("is_canceled", "count"), cancel=("is_canceled", "mean")
+)
+print(result)
+city_cancel = result.loc["City Hotel", "cancel"]
+resort_cancel = result.loc["Resort Hotel", "cancel"]
+print(f"จากโจทย์ข้อแรกอัตราการยักเลิกการจองขอแต่ละ Hotel คือ\nอัตราการยกเลิกการจองของ City Hotel : {city_cancel*100:.2f}% \nอัตราการยกเลิกการจองของ Resort Hotel : {resort_cancel*100:.2f}%")
+)
+#NOTE: โจทย์ข้อสอง
+df['lead_group']=pd.cut(df['lead_time'],
+    bins=[-1,7,14,30,60,90,180,365,800],
+    labels=['0-7','8-14','15-30','31-60','61-90','91-180','181-365','366+']
+                                                                 )
+result2=df.groupby(['hotel','lead_group'],observed=True).agg(
+    booking=('is_canceled','count') ,
+    cancel=('is_canceled','mean')
+    
+)
+print(result2)
