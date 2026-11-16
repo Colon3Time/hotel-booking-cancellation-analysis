@@ -25,6 +25,25 @@ df['lead_group']=pd.cut(df['lead_time'],
 result2=df.groupby(['hotel','lead_group'],observed=True).agg(
     booking=('is_canceled','count') ,
     cancel=('is_canceled','mean')
-    
+
 )
 print(result2)
+
+city = result2.loc['City Hotel']
+city_above = city['cancel'] > city_cancel
+print(city_above)
+print(f"City Hotel: อัตรายกเลิกเพิ่มจาก {city['cancel'].iloc[0]*100:.2f}% (0-7 วัน) เป็น {city['cancel'].iloc[-1]*100:.2f}% (366+ วัน)")
+print(f"City Hotel: เริ่มเสี่ยงที่ช่วง {city_above.idxmax()} วัน (สูงกว่าค่าเฉลี่ย {city_cancel*100:.2f}%)")
+
+resort = result2.loc['Resort Hotel']
+resort_above = resort['cancel'] > resort_cancel
+print(resort_above)
+print(f"Resort Hotel: อัตรายกเลิกเพิ่มจาก {resort['cancel'].iloc[0]*100:.2f}% (0-7 วัน) เป็น {resort['cancel'].iloc[-1]*100:.2f}% (366+ วัน)")
+print(f"Resort Hotel: เริ่มเสี่ยงที่ช่วง {resort_above.idxmax()} วัน (สูงกว่าค่าเฉลี่ย {resort_cancel*100:.2f}%)")
+#NOTE:3. ประเภทมัดจำ (`deposit_type`) สัมพันธ์กับการยกเลิกอย่างไร
+print(df['deposit_type'].unique())
+cancel_deposit=df.groupby('deposit_typel').agg(
+    booking=('is_canceled','count'),
+    cancel=('is_canceled','mean')
+)
+print(cancel_deposit)
